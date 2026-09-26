@@ -97,14 +97,25 @@ async def part4_attacks():
     from agents.agent import create_red_agent_default, test_agent
     from agents.guards_agent import create_red_agent_advance
     from attacks.attacks import run_attacks, save_attack_results
+    from core.config import get_request_delay
+
+    delay = get_request_delay()
 
     red_default, red_default_runner = create_red_agent_default()
     await test_agent(red_default, red_default_runner)
+
+    if delay > 0:
+        print(f"\nChờ {delay:.0f}s (REQUEST_DELAY_SECONDS)...")
+        await asyncio.sleep(delay)
 
     print("\n--- Attacks on Red ---")
     unsafe_results = await run_attacks(
         red_default, red_default_runner, target_name="red_default"
     )
+
+    if delay > 0:
+        print(f"\nChờ {delay:.0f}s (REQUEST_DELAY_SECONDS)...")
+        await asyncio.sleep(delay)
 
     print("\n--- Attacks on Red Advance (bonus B2 tối đa +10 nếu LEAKED; chọn 1) ---")
     red_advance, red_advance_runner = create_red_agent_advance()

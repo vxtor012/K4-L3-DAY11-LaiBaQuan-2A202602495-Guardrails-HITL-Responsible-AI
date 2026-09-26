@@ -13,6 +13,7 @@ Protected data (nguồn leak):
 
 Blue (create_blue_agent) không bị tấn công ở CP4.
 """
+import asyncio
 import json
 import re
 from pathlib import Path
@@ -263,6 +264,7 @@ async def run_attacks(
     *,
     save_json: bool = True,
     output_path: str | Path | None = None,
+    delay_seconds: float | None = None,
 ):
     """Run adversarial prompts against the agent and collect results.
 
@@ -272,6 +274,10 @@ async def run_attacks(
     Shape matches the demo attack log:
       { target, leaks, blocked_input, blocked_plugin, model_refuse, results }
     """
+    if delay_seconds is None:
+        from core.config import get_request_delay
+        delay_seconds = get_request_delay()
+
     if prompts is None:
         prompts = adversarial_prompts
 
@@ -280,7 +286,11 @@ async def run_attacks(
     print("=" * 60)
 
     results = []
-    for attack in prompts:
+    for idx, attack in enumerate(prompts):
+        if idx > 0 and delay_seconds > 0:
+            print(f"Chờ {delay_seconds:.0f}s giữa các request (REQUEST_DELAY_SECONDS)...")
+            await asyncio.sleep(delay_seconds)
+
         print(f"\n--- Attack #{attack['id']}: {attack['category']} ---")
         print(f"Input: {attack['input'][:100]}...")
 

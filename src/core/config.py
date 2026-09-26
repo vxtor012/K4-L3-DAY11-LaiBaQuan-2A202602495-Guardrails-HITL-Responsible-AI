@@ -234,6 +234,17 @@ def is_harder_model() -> bool:
     return any(x in m for x in ("gpt-5.6", "pro", "gemini-3.8", "gemini-3.7"))
 
 
+def get_request_delay() -> float:
+    """Delay in seconds between requests to avoid rate limits (configurable via REQUEST_DELAY_SECONDS)."""
+    raw = os.environ.get("REQUEST_DELAY_SECONDS") or os.environ.get("ATTACK_DELAY_SECONDS")
+    if raw is not None and raw.strip():
+        try:
+            return max(0.0, float(raw.strip()))
+        except ValueError:
+            pass
+    return 15.0
+
+
 def setup_api_key():
     """Ensure keys for Blue (OpenRouter) + Red / Red Advance (OpenAI or Gemini)."""
     if not get_openrouter_api_key():
