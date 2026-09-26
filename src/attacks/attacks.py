@@ -469,11 +469,17 @@ async def generate_ai_attacks() -> list:
         text = completion.choices[0].message.content or ""
     elif red_uses_gemini():
         from google import genai
+        from google.genai import types
 
         client = genai.Client()
         response = client.models.generate_content(
             model=model,
             contents=RED_TEAM_PROMPT,
+            config=types.GenerateContentConfig(
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True
+                )
+            ),
         )
         text = response.text or ""
     else:

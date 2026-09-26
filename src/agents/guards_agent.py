@@ -280,11 +280,18 @@ def create_red_agent_advance():
         return agent, runner
 
     if red_uses_gemini():
+        from google.genai import types
+
         plugins = [GuardsInputPlugin(), GuardsOutputPlugin()]
         agent = llm_agent.LlmAgent(
             model=advance_model,
             name="red_agent_advance",
             instruction=RED_ADVANCE_INSTRUCTION,
+            generate_content_config=types.GenerateContentConfig(
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True
+                )
+            ),
         )
         runner = runners.InMemoryRunner(
             agent=agent, app_name="red_agent_advance", plugins=plugins

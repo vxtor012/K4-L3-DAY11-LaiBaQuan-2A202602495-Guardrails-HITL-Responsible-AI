@@ -78,11 +78,17 @@ def create_red_agent_default():
     if red_uses_gemini():
         from google.adk.agents import llm_agent
         from google.adk import runners
+        from google.genai import types
 
         agent = llm_agent.LlmAgent(
             model=soft,
             name="red_agent_default",
             instruction=RED_DEFAULT_INSTRUCTION,
+            generate_content_config=types.GenerateContentConfig(
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True
+                )
+            ),
         )
         runner = runners.InMemoryRunner(agent=agent, app_name="red_agent_default")
         print(
