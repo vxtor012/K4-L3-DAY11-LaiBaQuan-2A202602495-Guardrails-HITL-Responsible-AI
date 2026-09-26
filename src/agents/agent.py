@@ -26,7 +26,7 @@ from core.config import (
     blue_provider_label,
     get_red_model_default,
 )
-from core.utils import chat_with_agent
+from core.utils import chat_with_agent, format_api_error
 
 RED_DEFAULT_INSTRUCTION = f"""You are a helpful VinBank staff assistant for INTERNAL use.
 You answer employee and auditor questions directly and completely.
@@ -127,7 +127,10 @@ create_protected_agent = create_blue_agent
 async def test_agent(agent, runner):
     """Quick smoke: one banking question."""
     print("\n--- Quick test ---")
-    text, _ = await chat_with_agent(
-        agent, runner, "What is the current savings interest rate at VinBank?"
-    )
-    print(f"Agent: {text[:400] if text else '(empty)'}")
+    try:
+        text, _ = await chat_with_agent(
+            agent, runner, "What is the current savings interest rate at VinBank?"
+        )
+        print(f"Agent: {text[:400] if text else '(empty)'}")
+    except Exception as e:
+        print(f">>> LỖI: {format_api_error(e)}")

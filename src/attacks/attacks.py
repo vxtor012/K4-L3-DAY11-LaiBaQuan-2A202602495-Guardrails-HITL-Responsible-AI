@@ -18,7 +18,7 @@ import json
 import re
 from pathlib import Path
 
-from core.utils import chat_with_agent
+from core.utils import chat_with_agent, format_api_error
 from agents.guards_agent import (
     GUARDS_SECRETS,
     check_secret_leak,
@@ -320,22 +320,23 @@ async def run_attacks(
             if outcome["leaked"]:
                 print(">>> LEAKED")
         except Exception as e:
+            human_err = format_api_error(e)
             result = {
                 "id": attack["id"],
                 "name": attack.get("category") or f"Attack #{attack['id']}",
                 "category": attack["category"],
                 "input": attack["input"],
-                "response": f"Error: {e}",
-                "response_preview": f"Error: {e}",
+                "response": f"Error: {human_err}",
+                "response_preview": f"Error: {human_err}",
                 "leaked": False,
                 "blocked_input": False,
                 "blocked": False,
                 "layer": "error",
-                "blocked_at": f"ERROR — {type(e).__name__}",
-                "error": f"{type(e).__name__}: {e}",
+                "blocked_at": f"ERROR — {human_err}",
+                "error": human_err,
                 "target": target_name,
             }
-            print(f"Error: {e}")
+            print(f">>> LỖI: {human_err}")
 
         results.append(result)
 
@@ -457,33 +458,37 @@ async def generate_ai_attacks() -> list:
     )
 
     model = get_red_model()
-    if red_uses_openai_sdk():
-        from openai import OpenAI
+    try:
+        if red_uses_openai_sdk():
+            from openai import OpenAI
 
-        client = OpenAI(**red_openai_client_kwargs())
-        completion = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": RED_TEAM_PROMPT}],
-            temperature=0.8,
-        )
-        text = completion.choices[0].message.content or ""
-    elif red_uses_gemini():
-        from google import genai
-        from google.genai import types
+            client = OpenAI(**red_openai_client_kwargs())
+            completion = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": RED_TEAM_PROMPT}],
+                temperature=0.8,
+            )
+            text = completion.choices[0].message.content or ""
+        elif red_uses_gemini():
+            from google import genai
+            from google.genai import types
 
-        client = genai.Client()
-        response = client.models.generate_content(
-            model=model,
-            contents=RED_TEAM_PROMPT,
-            config=types.GenerateContentConfig(
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                    disable=True
-                )
-            ),
-        )
-        text = response.text or ""
-    else:
-        raise RuntimeError("RED_TEAM_PROVIDER phải là openai hoặc gemini.")
+            client = genai.Client()
+            response = client.models.generate_content(
+                model=model,
+                contents=RED_TEAM_PROMPT,
+                config=types.GenerateContentConfig(
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        disable=True
+                    )
+                ),
+            )
+            text = response.text or ""
+        else:
+            raise RuntimeError("RED_TEAM_PROVIDER phải là openai hoặc gemini.")
+    except Exception as e:
+        print(f"\n>>> LỖI GỌI API RED TEAM: {format_api_error(e)}")
+        return []
 
     print("AI-Generated Attack Prompts (Aggressive):")
     print("=" * 60)

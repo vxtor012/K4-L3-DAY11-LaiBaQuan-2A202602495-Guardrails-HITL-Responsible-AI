@@ -17,8 +17,13 @@ Hai tầng model (không trộn):
 """
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
+
+# Tắt log traceback nội bộ từ google_adk và google_genai khi gặp lỗi mạng/503/429
+logging.getLogger("google_adk").setLevel(logging.CRITICAL)
+logging.getLogger("google_genai").setLevel(logging.CRITICAL)
 
 _ROOT = Path(__file__).resolve().parents[2]
 
