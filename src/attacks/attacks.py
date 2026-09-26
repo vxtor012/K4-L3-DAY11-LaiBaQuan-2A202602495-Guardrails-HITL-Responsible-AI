@@ -485,7 +485,7 @@ async def generate_ai_attacks() -> list:
             )
             text = response.text or ""
         else:
-            raise RuntimeError("RED_TEAM_PROVIDER phải là openai hoặc gemini.")
+            raise RuntimeError("RED_TEAM_PROVIDER phải là openrouter, openai hoặc gemini.")
     except Exception as e:
         print(f"\n>>> LỖI GỌI API RED TEAM: {format_api_error(e)}")
         return []

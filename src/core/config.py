@@ -133,27 +133,37 @@ def blue_provider_label() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Red Team — openai | gemini
+# Red Team — openrouter | openai | gemini
 # ---------------------------------------------------------------------------
 
 def get_red_provider() -> str:
     raw = (
         os.environ.get("RED_TEAM_PROVIDER")
         or os.environ.get("LLM_PROVIDER")
-        or "openai"
+        or "openrouter"
     ).strip().lower()
     if raw in {"gemini", "google", "adk"}:
         return PROVIDER_GEMINI
+    if raw in {"openrouter", "or"}:
+        return PROVIDER_OPENROUTER
     return PROVIDER_OPENAI
 
 
 def get_red_model() -> str:
     """Model Red Team từ .env (cùng cho default + advance)."""
-    if get_red_provider() == PROVIDER_GEMINI:
+    provider = get_red_provider()
+    if provider == PROVIDER_GEMINI:
         return (
             os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip()
             or DEFAULT_GEMINI_MODEL
         )
+    if provider == PROVIDER_OPENROUTER:
+        return (
+            os.environ.get("OPENROUTER_RED_MODEL")
+            or os.environ.get("RED_MODEL")
+            or os.environ.get("OPENAI_MODEL")
+            or "qwen/qwen3.8-27b"
+        ).strip()
     return (
         os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
         or DEFAULT_OPENAI_MODEL
@@ -175,6 +185,14 @@ def get_openai_api_key() -> str:
 
 
 def red_openai_client_kwargs() -> dict:
+    if get_red_provider() == PROVIDER_OPENROUTER:
+        return {
+            "api_key": get_openrouter_api_key() or None,
+            "base_url": (
+                os.environ.get("OPENROUTER_BASE_URL", OPENROUTER_BASE_URL).strip()
+                or OPENROUTER_BASE_URL
+            ),
+        }
     return {"api_key": get_openai_api_key() or None}
 
 
@@ -185,11 +203,12 @@ def red_provider_label(tier: str = "advance") -> str:
 
 
 def red_uses_openai_sdk() -> bool:
-    return get_red_provider() == PROVIDER_OPENAI
+    return get_red_provider() in (PROVIDER_OPENAI, PROVIDER_OPENROUTER)
 
 
 def red_uses_gemini() -> bool:
     return get_red_provider() == PROVIDER_GEMINI
+
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +239,7 @@ def provider_label() -> str:
 
 
 def is_harder_model() -> bool:
-    """True nếu .env đang trỏ model khó (luna / 3.8) — tuỳ chọn, không phải tên agent."""
+    """True nếu .env đang trỏ model khó (luna / 3.8 / qwen) — tuỳ chọn, không phải tên agent."""
     m = get_red_model().lower()
     if m in {DEFAULT_OPENAI_MODEL.lower(), DEFAULT_GEMINI_MODEL.lower()}:
         return False
@@ -233,10 +252,12 @@ def is_harder_model() -> bool:
         "gemini-3.7-flash",
         "gemini-3.6-flash",
         "gemini-2.5-pro",
+        "qwen/qwen3.8-27b",
+        "qwen3.8-27b",
     }
     if m in hard:
         return True
-    return any(x in m for x in ("gpt-5.6", "pro", "gemini-3.8", "gemini-3.7"))
+    return any(x in m for x in ("gpt-5.6", "pro", "gemini-3.8", "gemini-3.7", "qwen"))
 
 
 def get_request_delay() -> float:
@@ -251,7 +272,7 @@ def get_request_delay() -> float:
 
 
 def setup_api_key():
-    """Ensure keys for Blue (OpenRouter) + Red / Red Advance (OpenAI or Gemini)."""
+    """Ensure keys for Blue (OpenRouter) + Red / Red Advance (OpenRouter, OpenAI or Gemini)."""
     if not get_openrouter_api_key():
         os.environ["OPENROUTER_API_KEY"] = input(
             "Enter OpenRouter API Key (Blue): "
@@ -265,6 +286,8 @@ def setup_api_key():
             os.environ["GOOGLE_API_KEY"] = input("Enter Google API Key (Red): ").strip()
         os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
         print(f"Red / Red Advance  — gemini:{model}")
+    elif red == PROVIDER_OPENROUTER:
+        print(f"Red / Red Advance  — openrouter:{model}")
     else:
         if not get_openai_api_key():
             os.environ["OPENAI_API_KEY"] = input("Enter OpenAI API Key (Red): ").strip()

@@ -42,6 +42,7 @@ class OpenAIRunner:
     plugins: list = field(default_factory=list)
     provider: str = "openai"
     temperature: float = 0.4
+    max_tokens: int = 1024
     client_kwargs: dict = field(default_factory=dict)
     input_hooks: list[Callable[[str], str | None]] = field(default_factory=list)
     output_hooks: list[Callable[[str], str]] = field(default_factory=list)
@@ -69,6 +70,7 @@ class OpenAIRunner:
                 {"role": "user", "content": user_message},
             ],
             temperature=self.temperature,
+            max_tokens=self.max_tokens,
         )
         text = (completion.choices[0].message.content or "").strip()
 
